@@ -3,6 +3,7 @@ package clusterstack
 import (
 	"context"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -16,6 +17,7 @@ import (
 	v1alpha1Informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler"
+	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const (
@@ -25,14 +27,19 @@ const (
 
 //go:generate counterfeiter . ClusterStackReader
 type ClusterStackReader interface {
-	Read(clusterStackSpec v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error)
+	Read(keychain *authn.Keychain, clusterStackSpec v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error)
 }
 
-func NewController(opt reconciler.Options, clusterStackInformer v1alpha1Informers.ClusterStackInformer, clusterStackReader ClusterStackReader) *controller.Impl {
+func NewController(
+	opt reconciler.Options,
+	keychainFactory registry.KeychainFactory,
+	clusterStackInformer v1alpha1Informers.ClusterStackInformer,
+	clusterStackReader ClusterStackReader) *controller.Impl {
 	c := &Reconciler{
 		Client:             opt.Client,
 		ClusterStackLister: clusterStackInformer.Lister(),
 		ClusterStackReader: clusterStackReader,
+		KeychainFactory:    keychainFactory,
 	}
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 	clusterStackInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
@@ -43,6 +50,7 @@ type Reconciler struct {
 	Client             versioned.Interface
 	ClusterStackLister v1alpha1Listers.ClusterStackLister
 	ClusterStackReader ClusterStackReader
+	KeychainFactory    registry.KeychainFactory
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -74,7 +82,34 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileClusterStackStatus(clusterStack *v1alpha1.ClusterStack) (*v1alpha1.ClusterStack, error) {
-	resolvedClusterStack, err := c.ClusterStackReader.Read(clusterStack.Spec)
+	var keychain authn.Keychain
+	var err error
+
+	if len(clusterStack.Spec.ServiceAccountRef.Name) > 0 {
+		keychain, err = c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
+			ServiceAccount: clusterStack.Spec.ServiceAccountRef.Name,
+			Namespace:      clusterStack.Spec.ServiceAccountRef.Namespace,
+		})
+		if err != nil {
+			clusterStack.Status = v1alpha1.ClusterStackStatus{
+				Status: corev1alpha1.Status{
+					ObservedGeneration: clusterStack.Generation,
+					Conditions: corev1alpha1.Conditions{
+						{
+							Type:               corev1alpha1.ConditionReady,
+							Status:             corev1.ConditionFalse,
+							LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
+							Message:            err.Error(),
+						},
+					},
+				},
+			}
+			return clusterStack, err
+		}
+
+	}
+
+	resolvedClusterStack, err := c.ClusterStackReader.Read(&keychain, clusterStack.Spec)
 	if err != nil {
 		clusterStack.Status = v1alpha1.ClusterStackStatus{
 			Status: corev1alpha1.Status{

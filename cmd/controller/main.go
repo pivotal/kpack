@@ -40,7 +40,6 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/reconciler/build"
 	"github.com/pivotal/kpack/pkg/reconciler/builder"
-	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
@@ -171,8 +170,8 @@ func main() {
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	builderController, builderResync := builder.NewController(options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
 	clusterBuilderController, clusterBuilderResync := clusterBuilder.NewController(options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
-	clusterStoreController := clusterstore.NewController(options, clusterStoreInformer, remoteStoreReader)
-	clusterStackController := clusterstack.NewController(options, clusterStackInformer, remoteStackReader)
+	clusterStoreController := clusterstore.NewController(options, keychainFactory, clusterStoreInformer, remoteStoreReader)
+	clusterStackController := clusterstack.NewController(options, keychainFactory, clusterStackInformer, remoteStackReader)
 
 	lifecycleProvider.AddEventHandler(builderResync)
 	lifecycleProvider.AddEventHandler(clusterBuilderResync)

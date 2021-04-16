@@ -728,6 +728,7 @@ func (in *ClusterStackSpec) DeepCopyInto(out *ClusterStackSpec) {
 	*out = *in
 	out.BuildImage = in.BuildImage
 	out.RunImage = in.RunImage
+	out.ServiceAccountRef = in.ServiceAccountRef
 	return
 }
 
@@ -868,6 +869,7 @@ func (in *ClusterStoreSpec) DeepCopyInto(out *ClusterStoreSpec) {
 		*out = make([]StoreImage, len(*in))
 		copy(*out, *in)
 	}
+	out.ServiceAccountRef = in.ServiceAccountRef
 	return
 }
 

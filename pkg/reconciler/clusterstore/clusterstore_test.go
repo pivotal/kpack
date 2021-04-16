@@ -126,7 +126,8 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, 1, fakeStoreReader.ReadCallCount())
 
-			assert.Equal(t, store.Spec.Sources, fakeStoreReader.ReadArgsForCall(0))
+			_, clusterStoreSpec := fakeStoreReader.ReadArgsForCall(0)
+			assert.Equal(t, store.Spec.Sources, clusterStoreSpec)
 		})
 
 		it("does not update the status with no status change", func() {

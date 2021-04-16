@@ -107,7 +107,8 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			require.Equal(t, 1, fakeClusterStackReader.ReadCallCount())
-			require.Equal(t, testClusterStack.Spec, fakeClusterStackReader.ReadArgsForCall(0))
+			_, clusterStackSpec := fakeClusterStackReader.ReadArgsForCall(0)
+			require.Equal(t, testClusterStack.Spec, clusterStackSpec)
 		})
 
 		it("does not update the status with no status change", func() {

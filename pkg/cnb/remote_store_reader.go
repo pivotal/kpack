@@ -17,14 +17,17 @@ type RemoteStoreReader struct {
 	Keychain       authn.Keychain
 }
 
-func (r *RemoteStoreReader) Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error) {
+func (r *RemoteStoreReader) Read(keychain *authn.Keychain, storeImages []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error) {
 	var g errgroup.Group
+	if keychain == nil {
+		keychain = &r.Keychain
+	}
 
 	c := make(chan v1alpha1.StoreBuildpack)
 	for _, storeImage := range storeImages {
 		storeImageCopy := storeImage
 		g.Go(func() error {
-			image, _, err := r.RegistryClient.Fetch(r.Keychain, storeImageCopy.Image)
+			image, _, err := r.RegistryClient.Fetch(*keychain, storeImageCopy.Image)
 			if err != nil {
 				return err
 			}
