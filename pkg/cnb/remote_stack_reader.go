@@ -35,7 +35,7 @@ func (r *RemoteStackReader) Read(keychain *authn.Keychain, clusterStackSpec v1al
 		return v1alpha1.ResolvedClusterStack{}, err
 	}
 
-	runImage, runIdentifier, err := r.RegistryClient.Fetch(r.Keychain, clusterStackSpec.RunImage.Image)
+	runImage, runIdentifier, err := r.RegistryClient.Fetch(*keychain, clusterStackSpec.RunImage.Image)
 	if err != nil {
 		return v1alpha1.ResolvedClusterStack{}, err
 	}
