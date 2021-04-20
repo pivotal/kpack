@@ -68,8 +68,16 @@ func (is *ImageSpec) NeedVolumeCache() bool {
 	return is.Cache != nil && is.Cache.Volume != nil && is.Cache.Volume.Request != nil
 }
 
+func (is *ImageSpec) NeedRegistryCache() bool {
+	return is.Cache != nil && is.Cache.Registry != nil && len(is.Cache.Registry.Tag) > 0
+}
+
 func (im *Image) getBuildCacheConfig() BuildCacheConfig {
 	buildCacheConfig := BuildCacheConfig{}
+
+	if im.Spec.NeedRegistryCache() {
+		buildCacheConfig.ImageTag = im.Spec.Cache.Registry.Tag
+	}
 
 	if im.Spec.NeedVolumeCache() {
 		buildCacheConfig.VolumeName = im.Status.BuildCacheName

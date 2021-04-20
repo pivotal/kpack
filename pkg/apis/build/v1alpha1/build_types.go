@@ -71,6 +71,7 @@ type BuildSpec struct {
 
 type BuildCacheConfig struct {
 	VolumeName string `json:"volumeName,omitempty"`
+	ImageTag   string `json:"imageTag,omitempty"`
 }
 
 // +k8s:openapi-gen=true

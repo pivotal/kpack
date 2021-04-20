@@ -115,6 +115,19 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 		})
+
+		when("registry cache is provided", func() {
+			image.Spec.Cache = &CacheConfig{
+				Registry: &RegistryCache{
+					Tag: "test",
+				},
+			}
+			it("does not default volume cache", func() {
+				image.SetDefaults(context.TODO())
+
+				assert.Nil(t, image.Spec.Cache.Volume)
+			})
+		})
 	})
 
 	when("Validate", func() {

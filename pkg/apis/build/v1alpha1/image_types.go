@@ -54,10 +54,15 @@ type ImageSpec struct {
 
 type CacheConfig struct {
 	Volume   *VolumeCache   `json:"volume,omitempty"`
+	Registry *RegistryCache `json:"registry,omitempty"`
 }
 
 type VolumeCache struct {
 	Request *resource.Quantity `json:"request,omitempty"`
+}
+
+type RegistryCache struct {
+	Tag string `json:"tag"`
 }
 
 // +k8s:openapi-gen=true

@@ -165,8 +165,11 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 
 	var cacheArgs []string
 	var cacheVolumes []corev1.VolumeMount
-	if b.Spec.Cache.VolumeName == "" || config.OS == "windows" {
+	if b.Spec.Cache.ImageTag == "" && b.Spec.Cache.VolumeName == "" || config.OS == "windows" {
 		cacheArgs = nil
+		cacheVolumes = nil
+	} else if len(b.Spec.Cache.ImageTag) > 0 {
+		cacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.Cache.ImageTag)}
 		cacheVolumes = nil
 	} else {
 		cacheArgs = []string{"-cache-dir=/cache"}
@@ -641,14 +644,14 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 }
 
 func (b *Build) cacheVolume(os string) []corev1.Volume {
-	if b.Spec.CacheName == "" || os == "windows" {
+	if b.Spec.Cache.VolumeName == "" || os == "windows" {
 		return []corev1.Volume{}
 	}
 
 	return []corev1.Volume{{
 		Name: cacheDirName,
 		VolumeSource: corev1.VolumeSource{
-			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: b.Spec.CacheName},
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: b.Spec.Cache.VolumeName},
 		},
 	}}
 }
