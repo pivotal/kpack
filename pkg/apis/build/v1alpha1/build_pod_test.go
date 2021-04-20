@@ -67,7 +67,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					Revision: "gitrev1234",
 				},
 			},
-			CacheName: "some-cache-name",
+			Cache: v1alpha1.BuildCacheConfig{
+				VolumeName: "some-cache-name",
+			},
 			Bindings: []v1alpha1.Binding{
 				{
 					Name: "database",
@@ -670,7 +672,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		when("CacheName is empty", func() {
 			podWithCache, _ := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
-			build.Spec.CacheName = ""
+			build.Spec.Cache.VolumeName = ""
 
 			it("creates a pod without cache volume", func() {
 				pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
@@ -1285,7 +1287,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				buildPodBuilderConfigLinux := buildPodBuilderConfig.DeepCopy()
 				buildPodBuilderConfigLinux.OS = "linux"
 				podWithCache, _ := build.BuildPod(config, nil, nil, *buildPodBuilderConfigLinux)
-				build.Spec.CacheName = "non-empty"
+				build.Spec.Cache.VolumeName = "non-empty"
 
 				pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
 				require.NoError(t, err)

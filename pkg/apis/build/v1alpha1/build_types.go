@@ -59,7 +59,7 @@ type BuildSpec struct {
 	Builder        BuildBuilderSpec `json:"builder,omitempty"`
 	ServiceAccount string           `json:"serviceAccount,omitempty"`
 	Source         SourceConfig     `json:"source"`
-	CacheName      string           `json:"cacheName,omitempty"`
+	Cache          BuildCacheConfig `json:"cache,omitempty"`
 	// +listType
 	Bindings Bindings `json:"bindings,omitempty"`
 	// +listType
@@ -67,6 +67,10 @@ type BuildSpec struct {
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 	LastBuild *LastBuild                  `json:"lastBuild,omitempty"`
 	Notary    *NotaryConfig               `json:"notary,omitempty"`
+}
+
+type BuildCacheConfig struct {
+	VolumeName string `json:"volumeName,omitempty"`
 }
 
 // +k8s:openapi-gen=true

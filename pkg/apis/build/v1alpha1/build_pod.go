@@ -165,7 +165,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 
 	var cacheArgs []string
 	var cacheVolumes []corev1.VolumeMount
-	if b.Spec.CacheName == "" || config.OS == "windows" {
+	if b.Spec.Cache.VolumeName == "" || config.OS == "windows" {
 		cacheArgs = nil
 		cacheVolumes = nil
 	} else {
