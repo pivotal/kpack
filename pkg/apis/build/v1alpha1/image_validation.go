@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+
 	"github.com/pivotal/kpack/pkg/apis/validate"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -43,8 +44,12 @@ func (i *Image) SetDefaults(ctx context.Context) {
 		i.Spec.SuccessBuildHistoryLimit = &defaultSuccessfulBuildHistoryLimit
 	}
 
-	if i.Spec.CacheSize == nil && ctx.Value(HasDefaultStorageClass) != nil {
-		i.Spec.CacheSize = &defaultCacheSize
+	if i.Spec.Cache == nil && ctx.Value(HasDefaultStorageClass) != nil {
+		i.Spec.Cache = &CacheConfig{
+			Volume: &VolumeCache{
+				Request: &defaultCacheSize,
+			},
+		}
 	}
 }
 
@@ -73,7 +78,7 @@ func (is *ImageSpec) ValidateSpec(ctx context.Context) *apis.FieldError {
 		Also(validateBuilder(is.Builder).ViaField("builder")).
 		Also(is.Source.Validate(ctx).ViaField("source")).
 		Also(is.Build.Validate(ctx).ViaField("build")).
-		Also(is.validateCacheSize(ctx)).
+		Also(is.validateVolumeCache(ctx)).
 		Also(is.Notary.Validate(ctx).ViaField("notary"))
 }
 
@@ -86,18 +91,20 @@ func (is *ImageSpec) validateTag(ctx context.Context) *apis.FieldError {
 	return validate.Tag(is.Tag)
 }
 
-func (is *ImageSpec) validateCacheSize(ctx context.Context) *apis.FieldError {
-	if is.CacheSize != nil && ctx.Value(HasDefaultStorageClass) == nil {
-		return apis.ErrGeneric("spec.cacheSize cannot be set with no default StorageClass")
+func (is *ImageSpec) validateVolumeCache(ctx context.Context) *apis.FieldError {
+	if is.Cache.Volume != nil && ctx.Value(HasDefaultStorageClass) == nil {
+		return apis.ErrGeneric("spec.cache.volume.request cannot be set with no default StorageClass")
 	}
 
 	if apis.IsInUpdate(ctx) {
 		original := apis.GetBaseline(ctx).(*Image)
-		if original.Spec.CacheSize != nil && is.CacheSize.Cmp(*original.Spec.CacheSize) < 0 {
-			return &apis.FieldError{
-				Message: "Field cannot be decreased",
-				Paths:   []string{"cacheSize"},
-				Details: fmt.Sprintf("current: %v, requested: %v", original.Spec.CacheSize, is.CacheSize),
+		if original.Spec.NeedVolumeCache() && is.NeedVolumeCache() {
+			if is.Cache.Volume.Request.Cmp(*original.Spec.Cache.Volume.Request) < 0 {
+				return &apis.FieldError{
+					Message: "Field cannot be decreased",
+					Paths:   []string{"request"},
+					Details: fmt.Sprintf("current: %v, requested: %v", original.Spec.Cache.Volume.Request, is.Cache.Volume.Request),
+				}
 			}
 		}
 	}

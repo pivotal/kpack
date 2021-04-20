@@ -391,9 +391,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		when("reconciling build caches", func() {
 			cacheSize := resource.MustParse("1.5")
+			image.Spec.Cache = &v1alpha1.CacheConfig{
+				Volume: &v1alpha1.VolumeCache{
+					Request: &cacheSize,
+				},
+			}
 
 			it("creates a cache if requested", func() {
-				image.Spec.CacheSize = &cacheSize
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
@@ -444,7 +448,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("does not create a cache if a cache already exists", func() {
-				image.Spec.CacheSize = &cacheSize
+				image.Spec.Cache.Volume.Request = &cacheSize
 				image.Status.BuildCacheName = image.CacheName()
 
 				rt.Test(rtesting.TableRow{
@@ -464,7 +468,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 				image.Status.BuildCacheName = imageCacheName
 				newCacheSize := resource.MustParse("2.5")
-				image.Spec.CacheSize = &newCacheSize
+				image.Spec.Cache.Volume.Request = &newCacheSize
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
@@ -520,7 +524,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("updates build cache if desired labels change", func() {
 				var imageCacheName = image.CacheName()
-				image.Spec.CacheSize = &cacheSize
+				image.Spec.Cache.Volume.Request = &cacheSize
 				image.Status.BuildCacheName = imageCacheName
 				cache := image.BuildCache()
 
@@ -565,7 +569,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("deletes a cache if already exists and not requested", func() {
 				image.Status.BuildCacheName = image.CacheName()
-				image.Spec.CacheSize = nil
+				image.Spec.Cache.Volume.Request = nil
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
@@ -1013,7 +1017,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build with a desired build cache", func() {
 				cacheSize := resource.MustParse("2.5")
-				image.Spec.CacheSize = &cacheSize
+				image.Spec.Cache = &v1alpha1.CacheConfig{
+					Volume: &v1alpha1.VolumeCache{
+						Request: &cacheSize,
+					},
+				}
 				image.Status.BuildCacheName = image.CacheName()
 
 				sourceResolver := resolvedSourceResolver(image)
@@ -1075,7 +1083,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								CacheName: image.CacheName(),
+								Cache: v1alpha1.BuildCacheConfig{
+									VolumeName: image.CacheName(),
+								},
 							},
 						},
 					},

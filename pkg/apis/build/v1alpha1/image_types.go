@@ -44,12 +44,20 @@ type ImageSpec struct {
 	Builder                  corev1.ObjectReference `json:"builder,omitempty"`
 	ServiceAccount           string                 `json:"serviceAccount,omitempty"`
 	Source                   SourceConfig           `json:"source"`
-	CacheSize                *resource.Quantity     `json:"cacheSize,omitempty"`
+	Cache                    *CacheConfig           `json:"cache,omitempty"`
 	FailedBuildHistoryLimit  *int64                 `json:"failedBuildHistoryLimit,omitempty"`
 	SuccessBuildHistoryLimit *int64                 `json:"successBuildHistoryLimit,omitempty"`
 	ImageTaggingStrategy     ImageTaggingStrategy   `json:"imageTaggingStrategy,omitempty"`
 	Build                    *ImageBuild            `json:"build,omitempty"`
 	Notary                   *NotaryConfig          `json:"notary,omitempty"`
+}
+
+type CacheConfig struct {
+	Volume   *VolumeCache   `json:"volume,omitempty"`
+}
+
+type VolumeCache struct {
+	Request *resource.Quantity `json:"request,omitempty"`
 }
 
 // +k8s:openapi-gen=true
