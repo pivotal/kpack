@@ -68,7 +68,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	clusterStack = clusterStack.DeepCopy()
 
-	clusterStack, err = c.reconcileClusterStackStatus(clusterStack)
+	clusterStack, err = c.reconcileClusterStackStatus(ctx, clusterStack)
 
 	updateErr := c.updateClusterStackStatus(ctx, clusterStack)
 	if updateErr != nil {
@@ -81,12 +81,12 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return nil
 }
 
-func (c *Reconciler) reconcileClusterStackStatus(clusterStack *v1alpha1.ClusterStack) (*v1alpha1.ClusterStack, error) {
+func (c *Reconciler) reconcileClusterStackStatus(ctx context.Context, clusterStack *v1alpha1.ClusterStack) (*v1alpha1.ClusterStack, error) {
 	var keychain *authn.Keychain
 	var err error
 
 	if clusterStack.Spec.ServiceAccountRef != nil {
-		k, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
+		k, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 			ServiceAccount: clusterStack.Spec.ServiceAccountRef.Name,
 			Namespace:      clusterStack.Spec.ServiceAccountRef.Namespace,
 		})

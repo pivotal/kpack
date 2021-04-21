@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
@@ -68,7 +69,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	clusterStore = clusterStore.DeepCopy()
 
-	clusterStore, err = c.reconcileClusterStoreStatus(clusterStore)
+	clusterStore, err = c.reconcileClusterStoreStatus(ctx, clusterStore)
 
 	updateErr := c.updateClusterStoreStatus(ctx, clusterStore)
 	if updateErr != nil {
@@ -97,12 +98,12 @@ func (c *Reconciler) updateClusterStoreStatus(ctx context.Context, desired *v1al
 	return err
 }
 
-func (c *Reconciler) reconcileClusterStoreStatus(clusterStore *v1alpha1.ClusterStore) (*v1alpha1.ClusterStore, error) {
+func (c *Reconciler) reconcileClusterStoreStatus(ctx context.Context, clusterStore *v1alpha1.ClusterStore) (*v1alpha1.ClusterStore, error) {
 	var keychain *authn.Keychain
 	var err error
 
 	if clusterStore.Spec.ServiceAccountRef != nil {
-		k, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
+		k, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 			ServiceAccount: clusterStore.Spec.ServiceAccountRef.Name,
 			Namespace:      clusterStore.Spec.ServiceAccountRef.Namespace,
 		})
