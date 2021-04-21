@@ -26,8 +26,8 @@ type ClusterStore struct {
 // +k8s:openapi-gen=true
 type ClusterStoreSpec struct {
 	// +listType
-	Sources           []StoreImage           `json:"sources,omitempty"`
-	ServiceAccountRef corev1.ObjectReference `json:"serviceAccountRef,omitempty"`
+	Sources           []StoreImage            `json:"sources,omitempty"`
+	ServiceAccountRef *corev1.ObjectReference `json:"serviceAccountRef,omitempty"`
 }
 
 // +k8s:openapi-gen=true

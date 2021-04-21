@@ -98,14 +98,15 @@ func (c *Reconciler) updateClusterStoreStatus(ctx context.Context, desired *v1al
 }
 
 func (c *Reconciler) reconcileClusterStoreStatus(clusterStore *v1alpha1.ClusterStore) (*v1alpha1.ClusterStore, error) {
-	var keychain authn.Keychain
+	var keychain *authn.Keychain
 	var err error
 
-	if len(clusterStore.Spec.ServiceAccountRef.Name) > 0 {
-		keychain, err = c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
+	if clusterStore.Spec.ServiceAccountRef != nil {
+		k, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
 			ServiceAccount: clusterStore.Spec.ServiceAccountRef.Name,
 			Namespace:      clusterStore.Spec.ServiceAccountRef.Namespace,
 		})
+		keychain = &k
 		if err != nil {
 			clusterStore.Status = v1alpha1.ClusterStoreStatus{
 				Status: corev1alpha1.Status{
@@ -124,8 +125,7 @@ func (c *Reconciler) reconcileClusterStoreStatus(clusterStore *v1alpha1.ClusterS
 		}
 
 	}
-
-	buildpacks, err := c.StoreReader.Read(&keychain, clusterStore.Spec.Sources)
+	buildpacks, err := c.StoreReader.Read(keychain, clusterStore.Spec.Sources)
 	if err != nil {
 		clusterStore.Status = v1alpha1.ClusterStoreStatus{
 			Status: corev1alpha1.Status{

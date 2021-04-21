@@ -25,10 +25,10 @@ type ClusterStack struct {
 
 // +k8s:openapi-gen=true
 type ClusterStackSpec struct {
-	Id                string                 `json:"id,omitempty"`
-	BuildImage        ClusterStackSpecImage  `json:"buildImage,omitempty"`
-	RunImage          ClusterStackSpecImage  `json:"runImage,omitempty"`
-	ServiceAccountRef corev1.ObjectReference `json:"serviceAccountRef,omitempty"`
+	Id                string                  `json:"id,omitempty"`
+	BuildImage        ClusterStackSpecImage   `json:"buildImage,omitempty"`
+	RunImage          ClusterStackSpecImage   `json:"runImage,omitempty"`
+	ServiceAccountRef *corev1.ObjectReference `json:"serviceAccountRef,omitempty"`
 }
 
 // +k8s:openapi-gen=true

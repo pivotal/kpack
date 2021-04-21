@@ -82,14 +82,15 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileClusterStackStatus(clusterStack *v1alpha1.ClusterStack) (*v1alpha1.ClusterStack, error) {
-	var keychain authn.Keychain
+	var keychain *authn.Keychain
 	var err error
 
-	if len(clusterStack.Spec.ServiceAccountRef.Name) > 0 {
-		keychain, err = c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
+	if clusterStack.Spec.ServiceAccountRef != nil {
+		k, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
 			ServiceAccount: clusterStack.Spec.ServiceAccountRef.Name,
 			Namespace:      clusterStack.Spec.ServiceAccountRef.Namespace,
 		})
+		keychain = &k
 		if err != nil {
 			clusterStack.Status = v1alpha1.ClusterStackStatus{
 				Status: corev1alpha1.Status{
@@ -109,7 +110,7 @@ func (c *Reconciler) reconcileClusterStackStatus(clusterStack *v1alpha1.ClusterS
 
 	}
 
-	resolvedClusterStack, err := c.ClusterStackReader.Read(&keychain, clusterStack.Spec)
+	resolvedClusterStack, err := c.ClusterStackReader.Read(keychain, clusterStack.Spec)
 	if err != nil {
 		clusterStack.Status = v1alpha1.ClusterStackStatus{
 			Status: corev1alpha1.Status{

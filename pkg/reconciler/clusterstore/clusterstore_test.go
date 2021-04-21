@@ -20,6 +20,8 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore/clusterstorefakes"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
+	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
 func TestClusterStoreReconciler(t *testing.T) {
@@ -33,7 +35,8 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 		initialGeneration int64 = 1
 	)
 	var (
-		fakeStoreReader = &clusterstorefakes.FakeStoreReader{}
+		fakeStoreReader     = &clusterstorefakes.FakeStoreReader{}
+		fakeKeyChainFactory = &registryfakes.FakeKeychainFactory{}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -46,6 +49,7 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 				Client:             fakeClient,
 				StoreReader:        fakeStoreReader,
 				ClusterStoreLister: listers.GetClusterStoreLister(),
+				KeychainFactory:    fakeKeyChainFactory,
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
@@ -128,6 +132,50 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			_, clusterStoreSpec := fakeStoreReader.ReadArgsForCall(0)
 			assert.Equal(t, store.Spec.Sources, clusterStoreSpec)
+		})
+
+		it("uses the keychain of the referenced service account", func() {
+			fakeStoreReader.ReadReturns(readBuildpacks, nil)
+
+			store.Spec.ServiceAccountRef = &corev1.ObjectReference{Name: "private-account", Namespace: "my-namespace"}
+			secretRef := registry.SecretRef{
+				ServiceAccount: "private-account",
+				Namespace:      "my-namespace",
+			}
+			expectedKeyChain := &registryfakes.FakeKeychain{Name: "secret"}
+			fakeKeyChainFactory.AddKeychainForSecretRef(t, secretRef, expectedKeyChain)
+
+			rt.Test(rtesting.TableRow{
+				Key: storeKey,
+				Objects: []runtime.Object{
+					store,
+				},
+				WantErr: false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &v1alpha1.ClusterStore{
+							ObjectMeta: store.ObjectMeta,
+							Spec:       store.Spec,
+							Status: v1alpha1.ClusterStoreStatus{
+								Status: corev1alpha1.Status{
+									ObservedGeneration: 1,
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:   corev1alpha1.ConditionReady,
+											Status: corev1.ConditionTrue,
+										},
+									},
+								},
+								Buildpacks: readBuildpacks,
+							},
+						},
+					},
+				},
+			})
+
+			assert.Equal(t, 1, fakeStoreReader.ReadCallCount())
+			actualKeyChain, _ := fakeStoreReader.ReadArgsForCall(0)
+			assert.Equal(t, expectedKeyChain, *actualKeyChain)
 		})
 
 		it("does not update the status with no status change", func() {
