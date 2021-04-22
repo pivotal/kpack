@@ -86,8 +86,9 @@ type Binding struct {
 
 // +k8s:openapi-gen=true
 type LastBuild struct {
-	Image   string `json:"image,omitempty"`
-	StackId string `json:"stackId,omitempty"`
+	Image      string `json:"image,omitempty"`
+	CacheImage string `json:"cacheImage,omitempty"`
+	StackId    string `json:"stackId,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -102,6 +103,7 @@ type BuildStatus struct {
 	BuildMetadata       BuildpackMetadataList `json:"buildMetadata,omitempty"`
 	Stack               BuildStack            `json:"stack,omitempty"`
 	LatestImage         string                `json:"latestImage,omitempty"`
+	LatestCacheImage    string                `json:"latestCacheImage,omitempty"`
 	PodName             string                `json:"podName,omitempty"`
 	// +listType
 	StepStates []corev1.ContainerState `json:"stepStates,omitempty"`

@@ -96,8 +96,9 @@ func lastBuild(latestBuild *Build) *LastBuild {
 	}
 
 	return &LastBuild{
-		Image:   latestBuild.BuiltImage(),
-		StackId: latestBuild.Stack(),
+		Image:      latestBuild.BuiltImage(),
+		CacheImage: latestBuild.CacheImage(),
+		StackId:    latestBuild.Stack(),
 	}
 }
 
