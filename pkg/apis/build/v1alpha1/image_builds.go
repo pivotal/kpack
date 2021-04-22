@@ -72,7 +72,7 @@ func (is *ImageSpec) NeedRegistryCache() bool {
 	return is.Cache != nil && is.Cache.Registry != nil && len(is.Cache.Registry.Tag) > 0
 }
 
-func (im *Image) getBuildCacheConfig() BuildCacheConfig {
+func (im *Image) getBuildCacheConfig() *BuildCacheConfig {
 	buildCacheConfig := BuildCacheConfig{}
 
 	if im.Spec.NeedRegistryCache() {
@@ -83,7 +83,7 @@ func (im *Image) getBuildCacheConfig() BuildCacheConfig {
 		buildCacheConfig.VolumeName = im.Status.BuildCacheName
 	}
 
-	return buildCacheConfig
+	return &buildCacheConfig
 }
 
 func lastBuild(latestBuild *Build) *LastBuild {

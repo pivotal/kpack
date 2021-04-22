@@ -717,6 +717,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
+								Cache:          &v1alpha1.BuildCacheConfig{},
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -806,6 +807,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Image: clusterBuilder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
+								Cache:          &v1alpha1.BuildCacheConfig{},
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -895,6 +897,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
+								Cache:          &v1alpha1.BuildCacheConfig{},
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -985,6 +988,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Image: clusterBuilder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
+								Cache:          &v1alpha1.BuildCacheConfig{},
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1083,7 +1087,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								Cache: v1alpha1.BuildCacheConfig{
+								Cache: &v1alpha1.BuildCacheConfig{
 									VolumeName: image.CacheName(),
 								},
 							},
@@ -1227,6 +1231,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &v1alpha1.BuildCacheConfig{},
 								LastBuild: &v1alpha1.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1352,6 +1357,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &v1alpha1.BuildCacheConfig{},
 								LastBuild: &v1alpha1.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1511,6 +1517,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &v1alpha1.BuildCacheConfig{},
 								LastBuild: &v1alpha1.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1665,6 +1672,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &v1alpha1.BuildCacheConfig{},
 								LastBuild: &v1alpha1.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1809,6 +1817,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &v1alpha1.BuildCacheConfig{},
 								LastBuild: &v1alpha1.LastBuild{
 									Image:   "some/image@sha256:from-build-before-this-build",
 									StackId: "io.buildpacks.stacks.bionic",

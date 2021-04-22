@@ -114,7 +114,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					Revision: "gitrev1234",
 				},
 			},
-			Cache: v1alpha1.BuildCacheConfig{
+			Cache: &v1alpha1.BuildCacheConfig{
 				VolumeName: "some-cache-name",
 			},
 		},

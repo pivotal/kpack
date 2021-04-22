@@ -235,7 +235,11 @@ func (in *BuildSpec) DeepCopyInto(out *BuildSpec) {
 	}
 	in.Builder.DeepCopyInto(&out.Builder)
 	in.Source.DeepCopyInto(&out.Source)
-	out.Cache = in.Cache
+	if in.Cache != nil {
+		in, out := &in.Cache, &out.Cache
+		*out = new(BuildCacheConfig)
+		**out = **in
+	}
 	if in.Bindings != nil {
 		in, out := &in.Bindings, &out.Bindings
 		*out = make(Bindings, len(*in))
