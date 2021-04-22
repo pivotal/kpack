@@ -8,7 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
@@ -109,17 +108,7 @@ func (c *Reconciler) reconcileClusterStoreStatus(ctx context.Context, clusterSto
 		keychain = &k
 		if err != nil {
 			clusterStore.Status = v1alpha1.ClusterStoreStatus{
-				Status: corev1alpha1.Status{
-					ObservedGeneration: clusterStore.Generation,
-					Conditions: corev1alpha1.Conditions{
-						{
-							Type:               corev1alpha1.ConditionReady,
-							Status:             corev1.ConditionFalse,
-							LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
-							Message:            err.Error(),
-						},
-					},
-				},
+				Status: c.createStatus(clusterStore.Generation, err),
 			}
 			return clusterStore, err
 		}
@@ -128,33 +117,37 @@ func (c *Reconciler) reconcileClusterStoreStatus(ctx context.Context, clusterSto
 	buildpacks, err := c.StoreReader.Read(keychain, clusterStore.Spec.Sources)
 	if err != nil {
 		clusterStore.Status = v1alpha1.ClusterStoreStatus{
-			Status: corev1alpha1.Status{
-				ObservedGeneration: clusterStore.Generation,
-				Conditions: corev1alpha1.Conditions{
-					{
-						Type:               corev1alpha1.ConditionReady,
-						Status:             corev1.ConditionFalse,
-						LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-						Message:            err.Error(),
-					},
-				},
-			},
+			Status: c.createStatus(clusterStore.Generation, err),
 		}
 		return clusterStore, err
 	}
 
 	clusterStore.Status = v1alpha1.ClusterStoreStatus{
 		Buildpacks: buildpacks,
-		Status: corev1alpha1.Status{
-			ObservedGeneration: clusterStore.Generation,
-			Conditions: corev1alpha1.Conditions{
-				{
-					LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-					Type:               corev1alpha1.ConditionReady,
-					Status:             corev1.ConditionTrue,
-				},
+		Status:     c.createStatus(clusterStore.Generation, nil),
+	}
+	return clusterStore, nil
+}
+
+func (c *Reconciler) createStatus(generation int64, err error) corev1alpha1.Status {
+	msg := ""
+	conditionStatus := corev1.ConditionTrue
+
+	if err != nil {
+		msg = err.Error()
+		conditionStatus = corev1.ConditionFalse
+	}
+
+	status := corev1alpha1.Status{
+		ObservedGeneration: generation,
+		Conditions: corev1alpha1.Conditions{
+			{
+				Type:               corev1alpha1.ConditionReady,
+				Status:             conditionStatus,
+				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
+				Message:            msg,
 			},
 		},
 	}
-	return clusterStore, nil
+	return status
 }
