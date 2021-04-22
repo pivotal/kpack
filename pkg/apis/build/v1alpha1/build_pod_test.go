@@ -583,6 +583,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, pod.Spec.InitContainers[3].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
+				"home-dir",
 				"cache-dir",
 			}, names(pod.Spec.InitContainers[3].VolumeMounts))
 

@@ -342,6 +342,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 						}, cacheArgs),
 						VolumeMounts: append([]corev1.VolumeMount{
 							layersVolume,
+							homeVolume,
 						}, cacheVolumes...),
 						Env: []corev1.EnvVar{
 							{
