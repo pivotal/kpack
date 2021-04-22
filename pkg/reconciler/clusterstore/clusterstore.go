@@ -100,7 +100,6 @@ func (c *Reconciler) updateClusterStoreStatus(ctx context.Context, desired *v1al
 
 func (c *Reconciler) reconcileClusterStoreStatus(ctx context.Context, clusterStore *v1alpha1.ClusterStore) (*v1alpha1.ClusterStore, error) {
 	var keychain *authn.Keychain
-	var err error
 
 	if clusterStore.Spec.ServiceAccountRef != nil {
 		k, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{

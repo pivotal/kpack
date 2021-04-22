@@ -83,7 +83,6 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 func (c *Reconciler) reconcileClusterStackStatus(ctx context.Context, clusterStack *v1alpha1.ClusterStack) (*v1alpha1.ClusterStack, error) {
 	var keychain *authn.Keychain
-	var err error
 
 	if clusterStack.Spec.ServiceAccountRef != nil {
 		k, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
