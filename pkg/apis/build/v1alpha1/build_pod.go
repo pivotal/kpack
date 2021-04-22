@@ -163,15 +163,23 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 	}
 
 	var cacheArgs []string
+	var exportCacheArgs []string
 	var cacheVolumes []corev1.VolumeMount
-	if b.Spec.Cache.ImageTag == "" && b.Spec.Cache.VolumeName == "" || config.OS == "windows" {
+
+	if (b.Spec.Cache.ImageTag == "" && b.Spec.Cache.VolumeName == "") || config.OS == "windows" {
 		cacheArgs = nil
 		cacheVolumes = nil
 	} else if len(b.Spec.Cache.ImageTag) > 0 {
-		cacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.Cache.ImageTag)}
+		if b.Spec.LastBuild != nil && b.Spec.LastBuild.CacheImage != "" {
+			cacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.LastBuild.CacheImage)}
+		} else {
+			cacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.Cache.ImageTag)}
+		}
+		exportCacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.Cache.ImageTag)}
 		cacheVolumes = nil
 	} else {
 		cacheArgs = []string{"-cache-dir=/cache"}
+		exportCacheArgs = cacheArgs
 		cacheVolumes = []corev1.VolumeMount{cacheVolume}
 	}
 
@@ -391,7 +399,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 							"-group=/layers/group.toml",
 							"-analyzed=/layers/analyzed.toml",
 							"-project-metadata=/layers/project-metadata.toml"},
-							cacheArgs,
+							exportCacheArgs,
 							func() []string {
 								if platformAPI == "0.3" {
 									return nil
