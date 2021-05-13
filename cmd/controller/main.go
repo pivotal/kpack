@@ -40,7 +40,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/reconciler/build"
 	"github.com/pivotal/kpack/pkg/reconciler/builder"
-	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
+	clusterBuilder "github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
@@ -141,19 +141,17 @@ func main() {
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 
-	kpackKeychain, err := keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{})
-	if err != nil {
-		log.Fatalf("could not create empty keychain %s", err)
-	}
-
 	remoteStoreReader := &cnb.RemoteStoreReader{
 		RegistryClient: &registry.Client{},
-		Keychain:       kpackKeychain,
 	}
 
 	remoteStackReader := &cnb.RemoteStackReader{
 		RegistryClient: &registry.Client{},
-		Keychain:       kpackKeychain,
+	}
+
+	kpackKeychain, err := keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{})
+	if err != nil {
+		log.Fatalf("could not create empty keychain %s", err)
 	}
 
 	lifecycleProvider := config.NewLifecycleProvider(*lifecycleImage, &registry.Client{}, kpackKeychain)

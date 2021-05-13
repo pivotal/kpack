@@ -22,20 +22,15 @@ const (
 
 type RemoteStackReader struct {
 	RegistryClient RegistryClient
-	Keychain       authn.Keychain
 }
 
-func (r *RemoteStackReader) Read(keychain *authn.Keychain, clusterStackSpec v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error) {
-	if keychain == nil {
-		keychain = &r.Keychain
-	}
-
-	buildImage, buildIdentifier, err := r.RegistryClient.Fetch(*keychain, clusterStackSpec.BuildImage.Image)
+func (r *RemoteStackReader) Read(keychain authn.Keychain, clusterStackSpec v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error) {
+	buildImage, buildIdentifier, err := r.RegistryClient.Fetch(keychain, clusterStackSpec.BuildImage.Image)
 	if err != nil {
 		return v1alpha1.ResolvedClusterStack{}, err
 	}
 
-	runImage, runIdentifier, err := r.RegistryClient.Fetch(*keychain, clusterStackSpec.RunImage.Image)
+	runImage, runIdentifier, err := r.RegistryClient.Fetch(keychain, clusterStackSpec.RunImage.Image)
 	if err != nil {
 		return v1alpha1.ResolvedClusterStack{}, err
 	}

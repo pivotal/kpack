@@ -85,6 +85,9 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 				GroupID: 2000,
 			}
 			fakeClusterStackReader.ReadReturns(resolvedClusterStack, nil)
+			emptySecretRef := registry.SecretRef{}
+			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
+			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
 
 			rt.Test(rtesting.TableRow{
 				Key: clusterStackKey,
@@ -132,6 +135,9 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 				GroupID: 2000,
 			}
 			fakeClusterStackReader.ReadReturns(resolvedClusterStack, nil)
+			emptySecretRef := registry.SecretRef{}
+			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
+			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
 
 			testClusterStack.Status = v1alpha1.ClusterStackStatus{
 				Status: corev1alpha1.Status{
@@ -156,6 +162,9 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		it("sets the status to Ready False if error reading from clusterStack", func() {
 			fakeClusterStackReader.ReadReturns(v1alpha1.ResolvedClusterStack{}, errors.New("invalid mixins on run image"))
+			emptySecretRef := registry.SecretRef{}
+			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
+			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
 
 			rt.Test(rtesting.TableRow{
 				Key: clusterStackKey,
@@ -226,7 +235,7 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, 1, fakeClusterStackReader.ReadCallCount())
 			actualKeyChain, _ := fakeClusterStackReader.ReadArgsForCall(0)
-			assert.Equal(t, expectedKeyChain, *actualKeyChain)
+			assert.Equal(t, expectedKeyChain, actualKeyChain)
 		})
 
 	})

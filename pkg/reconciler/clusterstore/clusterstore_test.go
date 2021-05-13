@@ -100,6 +100,10 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 		it("saves metadata to the status", func() {
 			fakeStoreReader.ReadReturns(readBuildpacks, nil)
 
+			emptySecretRef := registry.SecretRef{}
+			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
+			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
+
 			rt.Test(rtesting.TableRow{
 				Key: storeKey,
 				Objects: []runtime.Object{
@@ -175,11 +179,15 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, 1, fakeStoreReader.ReadCallCount())
 			actualKeyChain, _ := fakeStoreReader.ReadArgsForCall(0)
-			assert.Equal(t, expectedKeyChain, *actualKeyChain)
+			assert.Equal(t, expectedKeyChain, actualKeyChain)
 		})
 
 		it("does not update the status with no status change", func() {
 			fakeStoreReader.ReadReturns(readBuildpacks, nil)
+
+			emptySecretRef := registry.SecretRef{}
+			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
+			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
 
 			store.Status = v1alpha1.ClusterStoreStatus{
 				Status: corev1alpha1.Status{
@@ -204,6 +212,10 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		it("sets the status to Ready False if error reading buildpacks", func() {
 			fakeStoreReader.ReadReturns(nil, fmt.Errorf("no buildpacks left"))
+
+			emptySecretRef := registry.SecretRef{}
+			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
+			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
 
 			rt.Test(rtesting.TableRow{
 				Key: storeKey,

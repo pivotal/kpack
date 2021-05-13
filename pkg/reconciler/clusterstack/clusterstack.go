@@ -27,7 +27,7 @@ const (
 
 //go:generate counterfeiter . ClusterStackReader
 type ClusterStackReader interface {
-	Read(keychain *authn.Keychain, clusterStackSpec v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error)
+	Read(keychain authn.Keychain, clusterStackSpec v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error)
 }
 
 func NewController(
@@ -82,21 +82,21 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileClusterStackStatus(ctx context.Context, clusterStack *v1alpha1.ClusterStack) (*v1alpha1.ClusterStack, error) {
-	var keychain *authn.Keychain
+	secretRef := registry.SecretRef{}
 
 	if clusterStack.Spec.ServiceAccountRef != nil {
-		k, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+		secretRef = registry.SecretRef{
 			ServiceAccount: clusterStack.Spec.ServiceAccountRef.Name,
 			Namespace:      clusterStack.Spec.ServiceAccountRef.Namespace,
-		})
-		keychain = &k
-		if err != nil {
-			clusterStack.Status = v1alpha1.ClusterStackStatus{
-				Status: c.createStatus(clusterStack.Generation, err),
-			}
-			return clusterStack, err
 		}
+	}
 
+	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, secretRef)
+	if err != nil {
+		clusterStack.Status = v1alpha1.ClusterStackStatus{
+			Status: c.createStatus(clusterStack.Generation, err),
+		}
+		return clusterStack, err
 	}
 
 	resolvedClusterStack, err := c.ClusterStackReader.Read(keychain, clusterStack.Spec)

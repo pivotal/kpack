@@ -10,10 +10,10 @@ import (
 )
 
 type FakeClusterStackReader struct {
-	ReadStub        func(*authn.Keychain, v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error)
+	ReadStub        func(authn.Keychain, v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error)
 	readMutex       sync.RWMutex
 	readArgsForCall []struct {
-		arg1 *authn.Keychain
+		arg1 authn.Keychain
 		arg2 v1alpha1.ClusterStackSpec
 	}
 	readReturns struct {
@@ -28,11 +28,11 @@ type FakeClusterStackReader struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClusterStackReader) Read(arg1 *authn.Keychain, arg2 v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error) {
+func (fake *FakeClusterStackReader) Read(arg1 authn.Keychain, arg2 v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error) {
 	fake.readMutex.Lock()
 	ret, specificReturn := fake.readReturnsOnCall[len(fake.readArgsForCall)]
 	fake.readArgsForCall = append(fake.readArgsForCall, struct {
-		arg1 *authn.Keychain
+		arg1 authn.Keychain
 		arg2 v1alpha1.ClusterStackSpec
 	}{arg1, arg2})
 	stub := fake.ReadStub
@@ -54,13 +54,13 @@ func (fake *FakeClusterStackReader) ReadCallCount() int {
 	return len(fake.readArgsForCall)
 }
 
-func (fake *FakeClusterStackReader) ReadCalls(stub func(*authn.Keychain, v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error)) {
+func (fake *FakeClusterStackReader) ReadCalls(stub func(authn.Keychain, v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error)) {
 	fake.readMutex.Lock()
 	defer fake.readMutex.Unlock()
 	fake.ReadStub = stub
 }
 
-func (fake *FakeClusterStackReader) ReadArgsForCall(i int) (*authn.Keychain, v1alpha1.ClusterStackSpec) {
+func (fake *FakeClusterStackReader) ReadArgsForCall(i int) (authn.Keychain, v1alpha1.ClusterStackSpec) {
 	fake.readMutex.RLock()
 	defer fake.readMutex.RUnlock()
 	argsForCall := fake.readArgsForCall[i]

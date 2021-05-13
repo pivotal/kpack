@@ -27,7 +27,7 @@ const (
 
 //go:generate counterfeiter . StoreReader
 type StoreReader interface {
-	Read(keychain *authn.Keychain, storeImages []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)
+	Read(keychain authn.Keychain, storeImages []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)
 }
 
 func NewController(
@@ -98,22 +98,23 @@ func (c *Reconciler) updateClusterStoreStatus(ctx context.Context, desired *v1al
 }
 
 func (c *Reconciler) reconcileClusterStoreStatus(ctx context.Context, clusterStore *v1alpha1.ClusterStore) (*v1alpha1.ClusterStore, error) {
-	var keychain *authn.Keychain
+	secretRef := registry.SecretRef{}
 
 	if clusterStore.Spec.ServiceAccountRef != nil {
-		k, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+		secretRef = registry.SecretRef{
 			ServiceAccount: clusterStore.Spec.ServiceAccountRef.Name,
 			Namespace:      clusterStore.Spec.ServiceAccountRef.Namespace,
-		})
-		keychain = &k
-		if err != nil {
-			clusterStore.Status = v1alpha1.ClusterStoreStatus{
-				Status: c.createStatus(clusterStore.Generation, err),
-			}
-			return clusterStore, err
 		}
-
 	}
+
+	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, secretRef)
+	if err != nil {
+		clusterStore.Status = v1alpha1.ClusterStoreStatus{
+			Status: c.createStatus(clusterStore.Generation, err),
+		}
+		return clusterStore, err
+	}
+
 	buildpacks, err := c.StoreReader.Read(keychain, clusterStore.Spec.Sources)
 	if err != nil {
 		clusterStore.Status = v1alpha1.ClusterStoreStatus{

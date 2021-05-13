@@ -10,10 +10,10 @@ import (
 )
 
 type FakeStoreReader struct {
-	ReadStub        func(*authn.Keychain, []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)
+	ReadStub        func(authn.Keychain, []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)
 	readMutex       sync.RWMutex
 	readArgsForCall []struct {
-		arg1 *authn.Keychain
+		arg1 authn.Keychain
 		arg2 []v1alpha1.StoreImage
 	}
 	readReturns struct {
@@ -28,7 +28,7 @@ type FakeStoreReader struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStoreReader) Read(arg1 *authn.Keychain, arg2 []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error) {
+func (fake *FakeStoreReader) Read(arg1 authn.Keychain, arg2 []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error) {
 	var arg2Copy []v1alpha1.StoreImage
 	if arg2 != nil {
 		arg2Copy = make([]v1alpha1.StoreImage, len(arg2))
@@ -37,7 +37,7 @@ func (fake *FakeStoreReader) Read(arg1 *authn.Keychain, arg2 []v1alpha1.StoreIma
 	fake.readMutex.Lock()
 	ret, specificReturn := fake.readReturnsOnCall[len(fake.readArgsForCall)]
 	fake.readArgsForCall = append(fake.readArgsForCall, struct {
-		arg1 *authn.Keychain
+		arg1 authn.Keychain
 		arg2 []v1alpha1.StoreImage
 	}{arg1, arg2Copy})
 	stub := fake.ReadStub
@@ -59,13 +59,13 @@ func (fake *FakeStoreReader) ReadCallCount() int {
 	return len(fake.readArgsForCall)
 }
 
-func (fake *FakeStoreReader) ReadCalls(stub func(*authn.Keychain, []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)) {
+func (fake *FakeStoreReader) ReadCalls(stub func(authn.Keychain, []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)) {
 	fake.readMutex.Lock()
 	defer fake.readMutex.Unlock()
 	fake.ReadStub = stub
 }
 
-func (fake *FakeStoreReader) ReadArgsForCall(i int) (*authn.Keychain, []v1alpha1.StoreImage) {
+func (fake *FakeStoreReader) ReadArgsForCall(i int) (authn.Keychain, []v1alpha1.StoreImage) {
 	fake.readMutex.RLock()
 	defer fake.readMutex.RUnlock()
 	argsForCall := fake.readArgsForCall[i]
