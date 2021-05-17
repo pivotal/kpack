@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -94,7 +93,7 @@ func (c *Reconciler) reconcileClusterStackStatus(ctx context.Context, clusterSta
 	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, secretRef)
 	if err != nil {
 		clusterStack.Status = v1alpha1.ClusterStackStatus{
-			Status: c.createStatus(clusterStack.Generation, err),
+			Status: corev1alpha1.CreateStatusWithReadyCondition(clusterStack.Generation, err),
 		}
 		return clusterStack, err
 	}
@@ -102,13 +101,13 @@ func (c *Reconciler) reconcileClusterStackStatus(ctx context.Context, clusterSta
 	resolvedClusterStack, err := c.ClusterStackReader.Read(keychain, clusterStack.Spec)
 	if err != nil {
 		clusterStack.Status = v1alpha1.ClusterStackStatus{
-			Status: c.createStatus(clusterStack.Generation, err),
+			Status: corev1alpha1.CreateStatusWithReadyCondition(clusterStack.Generation, err),
 		}
 		return clusterStack, err
 	}
 
 	clusterStack.Status = v1alpha1.ClusterStackStatus{
-		Status:               c.createStatus(clusterStack.Generation, nil),
+		Status:               corev1alpha1.CreateStatusWithReadyCondition(clusterStack.Generation, nil),
 		ResolvedClusterStack: resolvedClusterStack,
 	}
 	return clusterStack, nil
@@ -128,27 +127,4 @@ func (c *Reconciler) updateClusterStackStatus(ctx context.Context, desired *v1al
 
 	_, err = c.Client.KpackV1alpha1().ClusterStacks().UpdateStatus(ctx, desired, metav1.UpdateOptions{})
 	return err
-}
-
-func (c *Reconciler) createStatus(generation int64, err error) corev1alpha1.Status {
-	msg := ""
-	conditionStatus := corev1.ConditionTrue
-
-	if err != nil {
-		msg = err.Error()
-		conditionStatus = corev1.ConditionFalse
-	}
-
-	status := corev1alpha1.Status{
-		ObservedGeneration: generation,
-		Conditions: corev1alpha1.Conditions{
-			{
-				Type:               corev1alpha1.ConditionReady,
-				Status:             conditionStatus,
-				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-				Message:            msg,
-			},
-		},
-	}
-	return status
 }
