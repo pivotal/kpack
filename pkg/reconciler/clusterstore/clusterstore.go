@@ -3,7 +3,7 @@ package clusterstore
 import (
 	"context"
 
-	corev1 "k8s.io/api/core/v1"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,6 +16,7 @@ import (
 	v1alpha1expInformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1expListers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler"
+	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const (
@@ -25,14 +26,19 @@ const (
 
 //go:generate counterfeiter . StoreReader
 type StoreReader interface {
-	Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)
+	Read(keychain authn.Keychain, storeImages []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)
 }
 
-func NewController(opt reconciler.Options, clusterStoreInformer v1alpha1expInformers.ClusterStoreInformer, storeReader StoreReader) *controller.Impl {
+func NewController(
+	opt reconciler.Options,
+	keychainFactory registry.KeychainFactory,
+	clusterStoreInformer v1alpha1expInformers.ClusterStoreInformer,
+	storeReader StoreReader) *controller.Impl {
 	c := &Reconciler{
 		Client:             opt.Client,
 		ClusterStoreLister: clusterStoreInformer.Lister(),
 		StoreReader:        storeReader,
+		KeychainFactory:    keychainFactory,
 	}
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 	clusterStoreInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
@@ -43,6 +49,7 @@ type Reconciler struct {
 	Client             versioned.Interface
 	StoreReader        StoreReader
 	ClusterStoreLister v1alpha1expListers.ClusterStoreLister
+	KeychainFactory    registry.KeychainFactory
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -60,7 +67,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	clusterStore = clusterStore.DeepCopy()
 
-	clusterStore, err = c.reconcileClusterStoreStatus(clusterStore)
+	clusterStore, err = c.reconcileClusterStoreStatus(ctx, clusterStore)
 
 	updateErr := c.updateClusterStoreStatus(ctx, clusterStore)
 	if updateErr != nil {
@@ -89,37 +96,35 @@ func (c *Reconciler) updateClusterStoreStatus(ctx context.Context, desired *v1al
 	return err
 }
 
-func (c *Reconciler) reconcileClusterStoreStatus(clusterStore *v1alpha1.ClusterStore) (*v1alpha1.ClusterStore, error) {
-	buildpacks, err := c.StoreReader.Read(clusterStore.Spec.Sources)
+func (c *Reconciler) reconcileClusterStoreStatus(ctx context.Context, clusterStore *v1alpha1.ClusterStore) (*v1alpha1.ClusterStore, error) {
+	secretRef := registry.SecretRef{}
+
+	if clusterStore.Spec.ServiceAccountRef != nil {
+		secretRef = registry.SecretRef{
+			ServiceAccount: clusterStore.Spec.ServiceAccountRef.Name,
+			Namespace:      clusterStore.Spec.ServiceAccountRef.Namespace,
+		}
+	}
+
+	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, secretRef)
 	if err != nil {
 		clusterStore.Status = v1alpha1.ClusterStoreStatus{
-			Status: corev1alpha1.Status{
-				ObservedGeneration: clusterStore.Generation,
-				Conditions: corev1alpha1.Conditions{
-					{
-						Type:               corev1alpha1.ConditionReady,
-						Status:             corev1.ConditionFalse,
-						LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-						Message:            err.Error(),
-					},
-				},
-			},
+			Status: corev1alpha1.CreateStatusWithReadyCondition(clusterStore.Generation, err),
+		}
+		return clusterStore, err
+	}
+
+	buildpacks, err := c.StoreReader.Read(keychain, clusterStore.Spec.Sources)
+	if err != nil {
+		clusterStore.Status = v1alpha1.ClusterStoreStatus{
+			Status: corev1alpha1.CreateStatusWithReadyCondition(clusterStore.Generation, err),
 		}
 		return clusterStore, err
 	}
 
 	clusterStore.Status = v1alpha1.ClusterStoreStatus{
 		Buildpacks: buildpacks,
-		Status: corev1alpha1.Status{
-			ObservedGeneration: clusterStore.Generation,
-			Conditions: corev1alpha1.Conditions{
-				{
-					LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-					Type:               corev1alpha1.ConditionReady,
-					Status:             corev1.ConditionTrue,
-				},
-			},
-		},
+		Status:     corev1alpha1.CreateStatusWithReadyCondition(clusterStore.Generation, nil),
 	}
 	return clusterStore, nil
 }

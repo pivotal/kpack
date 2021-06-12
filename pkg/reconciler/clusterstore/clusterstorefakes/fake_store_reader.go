@@ -4,15 +4,17 @@ package clusterstorefakes
 import (
 	"sync"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 )
 
 type FakeStoreReader struct {
-	ReadStub        func([]v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)
+	ReadStub        func(authn.Keychain, []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)
 	readMutex       sync.RWMutex
 	readArgsForCall []struct {
-		arg1 []v1alpha1.StoreImage
+		arg1 authn.Keychain
+		arg2 []v1alpha1.StoreImage
 	}
 	readReturns struct {
 		result1 []v1alpha1.StoreBuildpack
@@ -26,26 +28,28 @@ type FakeStoreReader struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStoreReader) Read(arg1 []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error) {
-	var arg1Copy []v1alpha1.StoreImage
-	if arg1 != nil {
-		arg1Copy = make([]v1alpha1.StoreImage, len(arg1))
-		copy(arg1Copy, arg1)
+func (fake *FakeStoreReader) Read(arg1 authn.Keychain, arg2 []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error) {
+	var arg2Copy []v1alpha1.StoreImage
+	if arg2 != nil {
+		arg2Copy = make([]v1alpha1.StoreImage, len(arg2))
+		copy(arg2Copy, arg2)
 	}
 	fake.readMutex.Lock()
 	ret, specificReturn := fake.readReturnsOnCall[len(fake.readArgsForCall)]
 	fake.readArgsForCall = append(fake.readArgsForCall, struct {
-		arg1 []v1alpha1.StoreImage
-	}{arg1Copy})
-	fake.recordInvocation("Read", []interface{}{arg1Copy})
+		arg1 authn.Keychain
+		arg2 []v1alpha1.StoreImage
+	}{arg1, arg2Copy})
+	stub := fake.ReadStub
+	fakeReturns := fake.readReturns
+	fake.recordInvocation("Read", []interface{}{arg1, arg2Copy})
 	fake.readMutex.Unlock()
-	if fake.ReadStub != nil {
-		return fake.ReadStub(arg1)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.readReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -55,17 +59,17 @@ func (fake *FakeStoreReader) ReadCallCount() int {
 	return len(fake.readArgsForCall)
 }
 
-func (fake *FakeStoreReader) ReadCalls(stub func([]v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)) {
+func (fake *FakeStoreReader) ReadCalls(stub func(authn.Keychain, []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)) {
 	fake.readMutex.Lock()
 	defer fake.readMutex.Unlock()
 	fake.ReadStub = stub
 }
 
-func (fake *FakeStoreReader) ReadArgsForCall(i int) []v1alpha1.StoreImage {
+func (fake *FakeStoreReader) ReadArgsForCall(i int) (authn.Keychain, []v1alpha1.StoreImage) {
 	fake.readMutex.RLock()
 	defer fake.readMutex.RUnlock()
 	argsForCall := fake.readArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeStoreReader) ReadReturns(result1 []v1alpha1.StoreBuildpack, result2 error) {
