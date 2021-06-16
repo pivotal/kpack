@@ -29,7 +29,7 @@ const (
 
 type BuildReason string
 
-func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons, changes, cacheName string, nextBuildNumber int64) *Build {
+func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons, changes string, nextBuildNumber int64) *Build {
 	buildNumber := strconv.Itoa(int(nextBuildNumber))
 
 	return &Build{
@@ -57,11 +57,33 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			Resources:      im.Resources(),
 			ServiceAccount: im.Spec.ServiceAccount,
 			Source:         sourceResolver.SourceConfig(),
-			CacheName:      im.Status.BuildCacheName,
+			Cache:          im.getBuildCacheConfig(),
 			LastBuild:      lastBuild(latestBuild),
 			Notary:         im.Spec.Notary,
 		},
 	}
+}
+
+func (is *ImageSpec) NeedVolumeCache() bool {
+	return is.Cache != nil && is.Cache.Volume != nil && is.Cache.Volume.Request != nil
+}
+
+func (is *ImageSpec) NeedRegistryCache() bool {
+	return is.Cache != nil && is.Cache.Registry != nil && len(is.Cache.Registry.Tag) > 0
+}
+
+func (im *Image) getBuildCacheConfig() *BuildCacheConfig {
+	buildCacheConfig := BuildCacheConfig{}
+
+	if im.Spec.NeedRegistryCache() {
+		buildCacheConfig.ImageTag = im.Spec.Cache.Registry.Tag
+	}
+
+	if im.Spec.NeedVolumeCache() {
+		buildCacheConfig.VolumeName = im.Status.BuildCacheName
+	}
+
+	return &buildCacheConfig
 }
 
 func lastBuild(latestBuild *Build) *LastBuild {
@@ -74,8 +96,9 @@ func lastBuild(latestBuild *Build) *LastBuild {
 	}
 
 	return &LastBuild{
-		Image:   latestBuild.BuiltImage(),
-		StackId: latestBuild.Stack(),
+		Image:      latestBuild.BuiltImage(),
+		CacheImage: latestBuild.CacheImage(),
+		StackId:    latestBuild.Stack(),
 	}
 }
 
@@ -111,10 +134,6 @@ func (im *Image) CacheName() string {
 	return kmeta.ChildName(im.Name, "-cache")
 }
 
-func (im *Image) NeedCache() bool {
-	return im.Spec.CacheSize != nil
-}
-
 func (im *Image) BuildCache() *corev1.PersistentVolumeClaim {
 	return &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -129,7 +148,7 @@ func (im *Image) BuildCache() *corev1.PersistentVolumeClaim {
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
-					corev1.ResourceStorage: *im.Spec.CacheSize,
+					corev1.ResourceStorage: *im.Spec.Cache.Volume.Request,
 				},
 			},
 		},

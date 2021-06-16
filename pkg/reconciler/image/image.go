@@ -177,7 +177,7 @@ func (c *Reconciler) reconcileSourceResolver(ctx context.Context, image *v1alpha
 }
 
 func (c *Reconciler) reconcileBuildCache(ctx context.Context, image *v1alpha1.Image) (string, error) {
-	if !image.NeedCache() {
+	if !image.Spec.NeedVolumeCache() {
 		buildCache, err := c.PvcLister.PersistentVolumeClaims(image.Namespace).Get(image.CacheName())
 		if err != nil && !k8serrors.IsNotFound(err) {
 			return "", errors.Wrap(err, "cannot retrieve persistent volume claim")

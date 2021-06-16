@@ -32,15 +32,16 @@ func (fake *FakeClusterStackReader) Read(arg1 v1alpha1.ClusterStackSpec) (v1alph
 	fake.readArgsForCall = append(fake.readArgsForCall, struct {
 		arg1 v1alpha1.ClusterStackSpec
 	}{arg1})
+	stub := fake.ReadStub
+	fakeReturns := fake.readReturns
 	fake.recordInvocation("Read", []interface{}{arg1})
 	fake.readMutex.Unlock()
-	if fake.ReadStub != nil {
-		return fake.ReadStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.readReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

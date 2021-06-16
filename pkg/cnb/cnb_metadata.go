@@ -53,6 +53,28 @@ func (r *RemoteMetadataRetriever) GetBuiltImage(ctx context.Context, build *v1al
 	return readBuiltImage(appImage, appImageId)
 }
 
+func (r *RemoteMetadataRetriever) GetCacheImage(ctx context.Context, build *v1alpha1.Build) (string, error) {
+	if len(build.Spec.Cache.ImageTag) == 0 {
+		return "", nil
+	}
+
+	keychain, err := r.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+		ServiceAccount: build.Spec.ServiceAccount,
+		Namespace:      build.Namespace,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	_, cacheImageId, err := r.ImageFetcher.Fetch(keychain, build.Spec.Cache.ImageTag)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to fetch cache image")
+	}
+
+	return cacheImageId, nil
+}
+
 type BuiltImage struct {
 	Identifier        string
 	CompletedAt       time.Time

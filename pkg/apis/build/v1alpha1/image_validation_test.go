@@ -38,7 +38,11 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 					Revision: "master",
 				},
 			},
-			CacheSize:                &cacheSize,
+			Cache: &CacheConfig{
+				Volume: &VolumeCache{
+					Request: &cacheSize,
+				},
+			},
 			FailedBuildHistoryLimit:  &limit,
 			SuccessBuildHistoryLimit: &limit,
 			ImageTaggingStrategy:     None,
@@ -92,14 +96,14 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("the cache is not provided", func() {
-			image.Spec.CacheSize = nil
+			image.Spec.Cache = nil
 
 			when("the context has the default storage class key", func() {
 				it("sets the default cache size", func() {
 					image.SetDefaults(ctx)
 
-					assert.NotNil(t, image.Spec.CacheSize)
-					assert.Equal(t, image.Spec.CacheSize.String(), "2G")
+					assert.NotNil(t, image.Spec.Cache.Volume.Request)
+					assert.Equal(t, image.Spec.Cache.Volume.Request.String(), "2G")
 				})
 			})
 
@@ -107,8 +111,21 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 				it("does not set the default cache size", func() {
 					image.SetDefaults(context.TODO())
 
-					assert.Nil(t, image.Spec.CacheSize)
+					assert.Nil(t, image.Spec.Cache)
 				})
+			})
+		})
+
+		when("registry cache is provided", func() {
+			image.Spec.Cache = &CacheConfig{
+				Registry: &RegistryCache{
+					Tag: "test",
+				},
+			}
+			it("does not default volume cache", func() {
+				image.SetDefaults(context.TODO())
+
+				assert.Nil(t, image.Spec.Cache.Volume)
 			})
 		})
 	})
@@ -247,7 +264,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 		it("validates cache size is not set when there is no default StorageClass", func() {
 			ctx = context.TODO()
 
-			assertValidationError(image, ctx, apis.ErrGeneric("spec.cacheSize cannot be set with no default StorageClass"))
+			assertValidationError(image, ctx, apis.ErrGeneric("spec.cache.volume.request cannot be set with no default StorageClass"))
 		})
 
 		it("combining errors", func() {
@@ -269,9 +286,9 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 		it("image.cacheSize has not decreased", func() {
 			original := image.DeepCopy()
 			cacheSize := resource.MustParse("4G")
-			image.Spec.CacheSize = &cacheSize
+			image.Spec.Cache.Volume.Request = &cacheSize
 			err := image.Validate(apis.WithinUpdate(ctx, original))
-			assert.EqualError(t, err, "Field cannot be decreased: spec.cacheSize\ncurrent: 5G, requested: 4G")
+			assert.EqualError(t, err, "Field cannot be decreased: spec.request\ncurrent: 5G, requested: 4G")
 		})
 
 		when("validating the notary config", func() {

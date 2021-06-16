@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 )
 
@@ -164,17 +163,28 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 	}
 
 	var cacheArgs []string
+	var exportCacheArgs []string
 	var cacheVolumes []corev1.VolumeMount
-	if b.Spec.CacheName == "" || config.OS == "windows" {
+
+	if (b.Spec.Cache.ImageTag == "" && b.Spec.Cache.VolumeName == "") || config.OS == "windows" {
 		cacheArgs = nil
+		cacheVolumes = nil
+	} else if len(b.Spec.Cache.ImageTag) > 0 {
+		if b.Spec.LastBuild != nil && b.Spec.LastBuild.CacheImage != "" {
+			cacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.LastBuild.CacheImage)}
+		} else {
+			cacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.Cache.ImageTag)}
+		}
+		exportCacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.Cache.ImageTag)}
 		cacheVolumes = nil
 	} else {
 		cacheArgs = []string{"-cache-dir=/cache"}
+		exportCacheArgs = cacheArgs
 		cacheVolumes = []corev1.VolumeMount{cacheVolume}
 	}
 
 	return &corev1.Pod{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      b.PodName(),
 			Namespace: b.Namespace,
 			Labels: combine(b.Labels, map[string]string{
@@ -340,6 +350,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 						}, cacheArgs),
 						VolumeMounts: append([]corev1.VolumeMount{
 							layersVolume,
+							homeVolume,
 						}, cacheVolumes...),
 						Env: []corev1.EnvVar{
 							{
@@ -388,7 +399,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 							"-group=/layers/group.toml",
 							"-analyzed=/layers/analyzed.toml",
 							"-project-metadata=/layers/project-metadata.toml"},
-							cacheArgs,
+							exportCacheArgs,
 							func() []string {
 								if platformAPI == "0.3" {
 									return nil
@@ -641,14 +652,14 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 }
 
 func (b *Build) cacheVolume(os string) []corev1.Volume {
-	if b.Spec.CacheName == "" || os == "windows" {
+	if b.Spec.Cache.VolumeName == "" || os == "windows" {
 		return []corev1.Volume{}
 	}
 
 	return []corev1.Volume{{
 		Name: cacheDirName,
 		VolumeSource: corev1.VolumeSource{
-			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: b.Spec.CacheName},
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: b.Spec.Cache.VolumeName},
 		},
 	}}
 }
