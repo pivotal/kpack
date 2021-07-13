@@ -1,0 +1,16 @@
+{{- range .Values.buildImages }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # These names are hardcoded and not prefixed with the release name
+  # since we currently have certain configmap names hardcoded.
+  # TODO: Remove this once https://github.com/pivotal/kpack/issues/687
+  # is resolved.
+  name: {{ .name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "kpack.labels" $ |  nindent 4 }}
+data:
+  image: {{ .image }}
+---
+{{- end }}

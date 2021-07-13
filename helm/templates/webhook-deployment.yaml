@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kpack.fullname" . }}-webhook
+  namespace: {{ $.Release.Namespace }}
+  labels: {{- include "kpack.labels" . |  nindent 4 }}
+    component: webhook
+spec:
+  replicas: {{ .Values.webhookReplicas }}
+  selector:
+    matchLabels: {{- include "kpack.selectorLabels" . | nindent 6 }}
+      component: webhook
+  template:
+    metadata:
+      labels: {{- include "kpack.labels" . |  nindent 8 }}
+        component: webhook
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kpack.webhookServiceAccountName" . }}
+      containers:
+      - name: webhook
+        image: {{ .Values.webhookImage.tag }}
+        imagePullPolicy: {{ .Values.webhookImage.pullPolicy }}
+        env: {{- toYaml .Values.commonEnv | nindent 8}}
+        ports:
+        - name: https-webhook
+          # These names are hardcoded and not prefixed with the release name
+          # since we currently have certain webhook configs hardcoded.
+          # TODO: Add a release name prefix once this https://github.com/pivotal/kpack/issues/688
+          # is resolved.
+          containerPort: 8443
+        resources: {{- toYaml .Values.webhookResources | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
