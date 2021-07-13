@@ -19,8 +19,6 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
-	"knative.dev/pkg/kmeta"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
@@ -36,12 +34,6 @@ type Build struct {
 	Spec   BuildSpec   `json:"spec"`
 	Status BuildStatus `json:"status,omitempty"`
 }
-
-var (
-	_ apis.Validatable   = (*Build)(nil)
-	_ apis.Defaultable   = (*Build)(nil)
-	_ kmeta.OwnerRefable = (*Build)(nil)
-)
 
 // +k8s:openapi-gen=true
 type BuildBuilderSpec struct {
